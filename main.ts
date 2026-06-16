@@ -280,26 +280,35 @@ interface FencedBlock {
 	body: string;
 }
 
-// Locate the fenced code block the cursor sits inside, if any. Scans up for the
-// opening fence and down for the closing one. Returns null when the cursor is
-// not inside a complete block.
+// Locate the fenced code block whose range contains the cursor, if any. Walks the
+// document block by block from the top so the cursor is matched against complete
+// [open, close] ranges. This avoids the trap of scanning upward and landing on a
+// closing fence (which has no language), which is what made "Edit" report the
+// wrong block type when the cursor was not squarely inside the source.
 function blockAtCursor(editor: Editor): FencedBlock | null {
-	const curLine = editor.getCursor().line;
-	let start = -1;
-	for (let i = curLine; i >= 0; i--) {
-		if (editor.getLine(i).startsWith("```")) { start = i; break; }
-	}
-	if (start === -1) return null;
-	const lang = editor.getLine(start).replace(/^`+/, "").trim();
-	let end = -1;
+	const cur = editor.getCursor().line;
 	const total = editor.lineCount();
-	for (let i = start + 1; i < total; i++) {
-		if (editor.getLine(i).trim() === "```") { end = i; break; }
+	let i = 0;
+	while (i < total) {
+		const open = editor.getLine(i);
+		if (open.startsWith("```")) {
+			const lang = open.replace(/^`+/, "").trim();
+			let end = -1;
+			for (let j = i + 1; j < total; j++) {
+				if (editor.getLine(j).trim() === "```") { end = j; break; }
+			}
+			if (end === -1) return null; // unterminated block; nothing to edit
+			if (cur >= i && cur <= end) {
+				const body: string[] = [];
+				for (let k = i + 1; k < end; k++) body.push(editor.getLine(k));
+				return { startLine: i, endLine: end, lang, body: body.join("\n") };
+			}
+			i = end + 1;
+		} else {
+			i++;
+		}
 	}
-	if (end === -1 || curLine > end) return null;
-	const body: string[] = [];
-	for (let i = start + 1; i < end; i++) body.push(editor.getLine(i));
-	return { startLine: start, endLine: end, lang, body: body.join("\n") };
+	return null;
 }
 
 function replaceBlock(editor: Editor, blk: FencedBlock, newBlock: string): void {

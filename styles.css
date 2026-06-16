@@ -393,12 +393,18 @@
 
 /* ===== demo-only: cookbook-demo card (rendered by main.ts) ===== */
 .cookbook-demo-card {
-	position: relative;
 	padding: 8px 12px;
 	border: 1px solid var(--background-modifier-border);
 	border-inline-start: 4px solid var(--interactive-accent);
 	border-radius: var(--radius-s);
 	background: var(--background-secondary);
+}
+
+.cookbook-demo-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
 }
 
 .cookbook-demo-card-title {
@@ -412,12 +418,11 @@
 	font-size: var(--font-ui-smaller);
 }
 
-/* Small pencil affordance in the corner; appears only on blocks this plugin
- * renders (Obsidian-rendered blocks like mermaid cannot host one). */
+/* Small pencil affordance beside the title; appears only on blocks this plugin
+ * renders (Obsidian-rendered blocks like mermaid cannot host one). In-flow in the
+ * header row, so it never overlays the block content. */
 .cookbook-demo-card-edit {
-	position: absolute;
-	top: 6px;
-	inset-inline-end: 8px;
+	flex: 0 0 auto;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;

@@ -5,7 +5,7 @@
 // imports lives in ./components; copy any of those folders into your own plugin
 // to use them. This file is a showcase, not something to copy.
 
-import { Editor, MarkdownRenderer, Notice, Plugin } from "obsidian";
+import { App, Editor, MarkdownRenderer, Notice, Plugin, PluginSettingTab, type SettingDefinitionItem } from "obsidian";
 
 import { ConfirmModal, PromptModal } from "./components/modal-dialog/modal-dialog";
 import { FormModal } from "./components/form-modal/form-modal";
@@ -15,8 +15,19 @@ import { createIconChoice } from "./components/icon-choice/icon-choice";
 import { createIconPicker, SelectIconModal } from "./components/icon-picker/icon-picker";
 import { createColorPicker } from "./components/color-picker/color-picker";
 
+interface DemoSettings {
+	color?: string;
+	icon?: string;
+	markerIcon?: string;
+}
+
+const DEFAULT_SETTINGS: DemoSettings = {};
+
 export default class DeveloperCookbookDemo extends Plugin {
-	onload(): void {
+	settings: DemoSettings = { ...DEFAULT_SETTINGS };
+
+	async onload(): Promise<void> {
+		await this.loadSettings();
 		this.addCommand({
 			id: "confirm-dialog",
 			name: "Show confirm dialog",
@@ -47,6 +58,15 @@ export default class DeveloperCookbookDemo extends Plugin {
 			name: "Build a Mermaid diagram with live preview",
 			editorCallback: (editor: Editor) => void this.demoMermaid(editor),
 		});
+		this.addSettingTab(new DemoSettingTab(this.app, this));
+	}
+
+	async loadSettings(): Promise<void> {
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, (await this.loadData()) as Partial<DemoSettings> | null);
+	}
+
+	async saveSettings(): Promise<void> {
+		await this.saveData(this.settings);
 	}
 
 	private async demoConfirm(): Promise<void> {
@@ -152,5 +172,63 @@ export default class DeveloperCookbookDemo extends Plugin {
 		const to = String(values.to ?? "B") || "B";
 		const edge = values.label ? ` -->|${String(values.label)}| ` : " --> ";
 		return `flowchart ${dir}\n    A["${from}"]${edge}B["${to}"]`;
+	}
+}
+
+// A settings tab is the natural home for the inline pickers (the modals are
+// command-triggered; the pickers live in settings). Uses the declarative 1.13
+// API: each picker is a `render` item mounted into the row's control element,
+// and its value is persisted by hand since render rows are not auto-bound.
+class DemoSettingTab extends PluginSettingTab {
+	private readonly demoPlugin: DeveloperCookbookDemo;
+
+	constructor(app: App, plugin: DeveloperCookbookDemo) {
+		super(app, plugin);
+		this.demoPlugin = plugin;
+	}
+
+	getSettingDefinitions(): SettingDefinitionItem[] {
+		const plugin = this.demoPlugin;
+		const save = (): void => void plugin.saveSettings();
+		return [
+			{
+				type: "group",
+				heading: "Inline component showcase",
+				items: [
+					{
+						name: "Color picker",
+						desc: "Theme swatches, a hex field, and the native picker. Source: components/color-picker.",
+						render: setting => {
+							createColorPicker(setting.controlEl, {
+								current: plugin.settings.color,
+								onChange: v => { plugin.settings.color = v; save(); },
+							});
+						},
+					},
+					{
+						name: "Icon picker",
+						desc: "Browse every registered icon in a virtualized grid. Source: components/icon-picker.",
+						render: setting => {
+							createIconPicker(setting.controlEl, {
+								app: this.app,
+								current: plugin.settings.icon,
+								onChange: id => { plugin.settings.icon = id; save(); },
+							});
+						},
+					},
+					{
+						name: "Curated icon choice",
+						desc: "Pick one from a small developer-supplied set. Source: components/icon-choice.",
+						render: setting => {
+							createIconChoice(setting.controlEl, {
+								icons: ["pencil", "star", "bookmark", "tag", "flame"],
+								current: plugin.settings.markerIcon,
+								onChange: id => { plugin.settings.markerIcon = id; save(); },
+							});
+						},
+					},
+				],
+			},
+		];
 	}
 }

@@ -164,23 +164,23 @@ export default class DeveloperCookbookDemo extends Plugin {
 		const card = el.createDiv({ cls: "cookbook-demo-card" });
 		const color = values.color as string | undefined;
 		if (color) card.style.borderInlineStartColor = color;
-		// Header row: title on the left, the edit affordance beside it. Laid out in
-		// flow (not absolutely positioned) so the pencil never overlaps content.
-		const header = card.createDiv({ cls: "cookbook-demo-card-header" });
-		header.createDiv({ cls: "cookbook-demo-card-title", text: (values.title as string) || "Untitled card" });
+		card.createDiv({ cls: "cookbook-demo-card-title", text: (values.title as string) || "Untitled card" });
+		const parts: string[] = [];
+		if (values.size) parts.push(`size: ${String(values.size)}`);
+		if (values.count !== undefined && values.count !== "") parts.push(`count: ${String(values.count)}`);
+		if (color) parts.push(`color: ${color}`);
+		card.createDiv({ cls: "cookbook-demo-card-meta", text: parts.join("   •   ") });
+		// Hover-revealed edit affordance in the top-right, offset to sit just left
+		// of Obsidian's own live-preview edit marker rather than over it. Whether
+		// this appears at all is the plugin's choice, made here per block type.
 		if (onEdit) {
-			const btn = header.createEl("button", {
+			const btn = card.createEl("button", {
 				cls: "cookbook-demo-card-edit",
 				attr: { type: "button", "aria-label": "Edit card", title: "Edit card" },
 			});
 			setIcon(btn, "pencil");
 			btn.addEventListener("click", () => onEdit());
 		}
-		const parts: string[] = [];
-		if (values.size) parts.push(`size: ${String(values.size)}`);
-		if (values.count !== undefined && values.count !== "") parts.push(`count: ${String(values.count)}`);
-		if (color) parts.push(`color: ${color}`);
-		card.createDiv({ cls: "cookbook-demo-card-meta", text: parts.join("   •   ") });
 	}
 
 	// Reopen the card's form pre-filled, then write the result back over the same

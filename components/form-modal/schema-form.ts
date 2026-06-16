@@ -92,6 +92,10 @@ export interface SchemaFormOptions {
 	cta?: string;
 	destructive?: boolean;
 	fields: SchemaField[];
+	// Seed the form with existing values, keyed by field key, overriding each
+	// field's `default`. This is what turns the form into an editor: parse an
+	// existing block into a values map, pass it here, and the form opens pre-filled.
+	initialValues?: Record<string, unknown>;
 	// Optional live preview pane rendered at the bottom of the modal. Called on
 	// open and after every field change, with the current effective values
 	// (skipped and empty fields omitted, the same map you get back as the result's
@@ -111,7 +115,10 @@ export async function openSchemaForm(
 	const values: Record<string, unknown> = {};
 	const skipped = new Set<string>();
 	const errors = new Set<string>();
-	for (const f of opts.fields) values[f.key] = defaultFor(f);
+	for (const f of opts.fields) {
+		const seed = opts.initialValues?.[f.key];
+		values[f.key] = seed !== undefined ? seed : defaultFor(f);
+	}
 
 	const submitted = await new FormModal(app, {
 		title: opts.title,
@@ -314,11 +321,13 @@ function buildControl(
 		};
 	}
 
-	// Non-validating controls: toggle, dropdown, slider, color. Always valid.
+	// Non-validating controls: toggle, dropdown, slider, color. Always valid, but
+	// they must still call recompute() on change so the submit gate and the live
+	// preview update, exactly like the text and number controls above.
 	let setDisabled: (d: boolean) => void = () => {};
 	switch (f.type) {
 		case "toggle":
-			setting.addToggle(t => { t.setValue(Boolean(values[f.key])); t.onChange(v => { values[f.key] = v; }); setDisabled = d => t.setDisabled(d); });
+			setting.addToggle(t => { t.setValue(Boolean(values[f.key])); t.onChange(v => { values[f.key] = v; recompute(); }); setDisabled = d => t.setDisabled(d); });
 			break;
 		case "dropdown":
 			setting.addDropdown(d => {
@@ -327,7 +336,7 @@ function buildControl(
 					else d.addOption(o.value, o.label);
 				}
 				d.setValue(String(values[f.key] ?? ""));
-				d.onChange(v => { values[f.key] = v; });
+				d.onChange(v => { values[f.key] = v; recompute(); });
 				setDisabled = dis => d.setDisabled(dis);
 			});
 			break;
@@ -336,7 +345,7 @@ function buildControl(
 				s.setLimits(f.min ?? 0, f.max ?? 100, f.step ?? 1)
 					.setValue(Number(values[f.key] ?? f.min ?? 0))
 					.setDynamicTooltip();
-				s.onChange(v => { values[f.key] = v; });
+				s.onChange(v => { values[f.key] = v; recompute(); });
 				setDisabled = d => s.setDisabled(d);
 			});
 			break;
@@ -344,7 +353,7 @@ function buildControl(
 			setting.addColorPicker(c => {
 				const cur = values[f.key] as string;
 				if (cur) c.setValue(cur);
-				c.onChange(v => { values[f.key] = v; });
+				c.onChange(v => { values[f.key] = v; recompute(); });
 				setDisabled = d => c.setDisabled(d);
 			});
 			break;

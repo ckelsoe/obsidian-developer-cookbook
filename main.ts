@@ -1,9 +1,9 @@
 // Developer Cookbook demo plugin.
 //
 // This plugin exists to demonstrate, and to compile-check, every component in
-// the cookbook. Each command opens one component live. The component source it
-// imports lives in ./components; copy any of those folders into your own plugin
-// to use them. This file is a showcase, not something to copy.
+// the cookbook. The component source it imports lives in ./components; copy any
+// of those folders into your own plugin to use them. This file is a showcase,
+// not something to copy.
 
 import { App, Editor, MarkdownRenderer, Notice, Plugin, PluginSettingTab, type SettingDefinitionItem } from "obsidian";
 
@@ -23,41 +23,30 @@ interface DemoSettings {
 
 const DEFAULT_SETTINGS: DemoSettings = {};
 
+// The fenced-block language the "Insert a card" command writes and this plugin
+// renders. Pairing a serializer with a code-block processor like this is the
+// create-content pattern a real plugin (Tasks, a diagram plugin, etc.) follows.
+const CARD_ID = "cookbook-demo";
+
 export default class DeveloperCookbookDemo extends Plugin {
 	settings: DemoSettings = { ...DEFAULT_SETTINGS };
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
-		this.addCommand({
-			id: "confirm-dialog",
-			name: "Show confirm dialog",
-			callback: () => void this.demoConfirm(),
-		});
-		this.addCommand({
-			id: "text-prompt",
-			name: "Show text prompt",
-			callback: () => void this.demoPrompt(),
-		});
-		this.addCommand({
-			id: "browse-icons",
-			name: "Browse icons",
-			callback: () => this.demoIconPicker(),
-		});
-		this.addCommand({
-			id: "component-gallery",
-			name: "Show component gallery",
-			callback: () => void this.demoGallery(),
-		});
-		this.addCommand({
-			id: "build-code-block",
-			name: "Build a code block from a form",
-			editorCallback: (editor: Editor) => void this.demoSchemaForm(editor),
-		});
-		this.addCommand({
-			id: "build-mermaid-diagram",
-			name: "Build a Mermaid diagram with live preview",
-			editorCallback: (editor: Editor) => void this.demoMermaid(editor),
-		});
+
+		// Render the cookbook-demo blocks the card command inserts, so the
+		// form -> block -> rendered output round trip is complete and the inserted
+		// block is a visible card rather than inert text.
+		this.registerMarkdownCodeBlockProcessor(CARD_ID, (source, el) => this.renderCard(this.parseCard(source), el));
+
+		this.addCommand({ id: "confirm-dialog", name: "Show confirm dialog", callback: () => void this.demoConfirm() });
+		this.addCommand({ id: "text-prompt", name: "Show text prompt", callback: () => void this.demoPrompt() });
+		this.addCommand({ id: "browse-icons", name: "Browse icons", callback: () => this.demoIconPicker() });
+		this.addCommand({ id: "component-gallery", name: "Show component gallery", callback: () => void this.demoGallery() });
+		this.addCommand({ id: "insert-card", name: "Insert a card", editorCallback: e => void this.insertCard(e) });
+		this.addCommand({ id: "insert-mermaid", name: "Insert a Mermaid diagram", editorCallback: e => void this.insertMermaid(e) });
+		this.addCommand({ id: "edit-block", name: "Edit the card or diagram at the cursor", editorCallback: e => void this.editBlockAtCursor(e) });
+
 		this.addSettingTab(new DemoSettingTab(this.app, this));
 	}
 
@@ -68,6 +57,8 @@ export default class DeveloperCookbookDemo extends Plugin {
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 	}
+
+	// ----- Simple modal demos -------------------------------------------------
 
 	private async demoConfirm(): Promise<void> {
 		const ok = await new ConfirmModal(this.app, {
@@ -118,32 +109,72 @@ export default class DeveloperCookbookDemo extends Plugin {
 		}).ask();
 	}
 
-	private async demoSchemaForm(editor: Editor): Promise<void> {
-		const block = (values: Record<string, unknown>): string => serializeCodeBlock({
-			identifier: "cookbook-demo",
-			primary: values.title,
-			fields: ["color", "size", "count"].map(k => ({ key: k, value: values[k] })),
-		});
+	// ----- Card: create, edit, render -----------------------------------------
+
+	// The form, shared by the insert command and the edit flow. Passing
+	// `initial` turns it from a create form into an edit form (pre-filled).
+	private async openCardForm(initial?: Record<string, unknown>): Promise<Record<string, unknown> | null> {
 		const res = await openSchemaForm(this.app, {
-			title: "Insert sample block",
-			cta: "Insert",
+			title: initial ? "Edit card" : "Insert a card",
+			cta: initial ? "Save" : "Insert",
+			initialValues: initial,
 			fields: [
-				{ key: "title", name: "Title", type: "string", mandatory: true },
-				{ key: "color", name: "Color", type: "color" },
+				{
+					key: "title", name: "Title", type: "string", mandatory: true,
+					explanation: "This form builds a card. The preview below is exactly what gets inserted into your note, and you can reopen it later with \"Edit the card or diagram at the cursor\".",
+				},
+				{ key: "color", name: "Accent color", type: "color" },
 				{ key: "size", name: "Size", type: "dropdown", options: ["small", "medium", "large"], default: "medium" },
 				{ key: "count", name: "Count", type: "number", integer: true, min: 1, default: 1 },
 			],
-			// Live preview: the generated code block updates as the fields change.
-			preview: (values, el) => { el.createEl("pre", { text: block(values) }); },
+			// Live preview is the actual rendered card, so what you see is what you get.
+			preview: (values, el) => this.renderCard(values, el),
 		});
-		if (!res) return;
-		editor.replaceSelection(block(res.values) + "\n");
+		return res ? res.values : null;
 	}
 
-	private async demoMermaid(editor: Editor): Promise<void> {
+	private async insertCard(editor: Editor): Promise<void> {
+		const res = await this.openCardForm();
+		if (res) this.insertBlock(editor, this.cardBlock(res));
+	}
+
+	private cardBlock(values: Record<string, unknown>): string {
+		return serializeCodeBlock({
+			identifier: CARD_ID,
+			primary: values.title,
+			fields: ["color", "size", "count"].map(k => ({ key: k, value: values[k] })),
+		});
+	}
+
+	private parseCard(body: string): Record<string, unknown> {
+		const { primary, kv } = parseKeyValueBlock(body);
+		return {
+			title: primary,
+			color: kv.color,
+			size: kv.size,
+			count: kv.count ? Number(kv.count) : undefined,
+		};
+	}
+
+	private renderCard(values: Record<string, unknown>, el: HTMLElement): void {
+		const card = el.createDiv({ cls: "cookbook-demo-card" });
+		const color = values.color as string | undefined;
+		if (color) card.style.borderInlineStartColor = color;
+		card.createDiv({ cls: "cookbook-demo-card-title", text: (values.title as string) || "Untitled card" });
+		const parts: string[] = [];
+		if (values.size) parts.push(`size: ${String(values.size)}`);
+		if (values.count !== undefined && values.count !== "") parts.push(`count: ${String(values.count)}`);
+		if (color) parts.push(`color: ${color}`);
+		card.createDiv({ cls: "cookbook-demo-card-meta", text: parts.join("   •   ") });
+	}
+
+	// ----- Mermaid: create, edit, build ---------------------------------------
+
+	private async openMermaidForm(initial?: Record<string, unknown>): Promise<Record<string, unknown> | null> {
 		const res = await openSchemaForm(this.app, {
-			title: "Insert Mermaid flowchart",
-			cta: "Insert",
+			title: initial ? "Edit Mermaid flowchart" : "Insert a Mermaid diagram",
+			cta: initial ? "Save" : "Insert",
+			initialValues: initial,
 			fields: [
 				{ key: "direction", name: "Direction", type: "dropdown", default: "TD", options: [
 					{ value: "TD", label: "Top-down" },
@@ -155,15 +186,18 @@ export default class DeveloperCookbookDemo extends Plugin {
 				{ key: "to", name: "To node", type: "string", mandatory: true },
 				{ key: "label", name: "Edge label", type: "string" },
 			],
-			// The ultimate feature: a real, rendered Mermaid diagram that redraws as
-			// the user types, using Obsidian's own MarkdownRenderer. No extra deps.
+			// A real, rendered Mermaid diagram that redraws as the user types, via
+			// Obsidian's own MarkdownRenderer. No extra dependencies.
 			preview: (values, el) => {
-				const md = "```mermaid\n" + this.buildMermaid(values) + "\n```";
-				void MarkdownRenderer.render(this.app, md, el, "", this);
+				void MarkdownRenderer.render(this.app, "```mermaid\n" + this.buildMermaid(values) + "\n```", el, "", this);
 			},
 		});
-		if (!res) return;
-		editor.replaceSelection("```mermaid\n" + this.buildMermaid(res.values) + "\n```\n");
+		return res ? res.values : null;
+	}
+
+	private async insertMermaid(editor: Editor): Promise<void> {
+		const res = await this.openMermaidForm();
+		if (res) this.insertBlock(editor, "```mermaid\n" + this.buildMermaid(res) + "\n```");
 	}
 
 	private buildMermaid(values: Record<string, unknown>): string {
@@ -173,6 +207,97 @@ export default class DeveloperCookbookDemo extends Plugin {
 		const edge = values.label ? ` -->|${String(values.label)}| ` : " --> ";
 		return `flowchart ${dir}\n    A["${from}"]${edge}B["${to}"]`;
 	}
+
+	private parseMermaid(body: string): Record<string, unknown> {
+		const dir = body.match(/flowchart\s+(\w+)/)?.[1] ?? "TD";
+		const m = body.match(/A\["([\s\S]*?)"\]\s*-->(?:\|([\s\S]*?)\|)?\s*B\["([\s\S]*?)"\]/);
+		return { direction: dir, from: m?.[1] ?? "", label: m?.[2] ?? "", to: m?.[3] ?? "" };
+	}
+
+	// ----- Edit the block at the cursor ---------------------------------------
+
+	private async editBlockAtCursor(editor: Editor): Promise<void> {
+		const blk = blockAtCursor(editor);
+		if (!blk) {
+			new Notice("Put the cursor inside a card or Mermaid block first.");
+			return;
+		}
+		if (blk.lang === CARD_ID) {
+			const res = await this.openCardForm(this.parseCard(blk.body));
+			if (res) replaceBlock(editor, blk, this.cardBlock(res));
+		} else if (blk.lang === "mermaid") {
+			const res = await this.openMermaidForm(this.parseMermaid(blk.body));
+			if (res) replaceBlock(editor, blk, "```mermaid\n" + this.buildMermaid(res) + "\n```");
+		} else {
+			new Notice(`This demo can only edit "${CARD_ID}" and "mermaid" blocks.`);
+		}
+	}
+
+	// ----- Editor helpers -----------------------------------------------------
+
+	// Insert a fenced block, guaranteeing its opening fence starts on its own
+	// line. Without this, running the command mid-line glues ```lang onto the
+	// preceding text and the fence never parses.
+	private insertBlock(editor: Editor, block: string): void {
+		const cursor = editor.getCursor();
+		const before = editor.getLine(cursor.line).slice(0, cursor.ch);
+		const lead = before.trim().length > 0 ? "\n\n" : "";
+		editor.replaceSelection(`${lead}${block}\n`);
+	}
+}
+
+interface FencedBlock {
+	startLine: number;
+	endLine: number;
+	lang: string;
+	body: string;
+}
+
+// Locate the fenced code block the cursor sits inside, if any. Scans up for the
+// opening fence and down for the closing one. Returns null when the cursor is
+// not inside a complete block.
+function blockAtCursor(editor: Editor): FencedBlock | null {
+	const curLine = editor.getCursor().line;
+	let start = -1;
+	for (let i = curLine; i >= 0; i--) {
+		if (editor.getLine(i).startsWith("```")) { start = i; break; }
+	}
+	if (start === -1) return null;
+	const lang = editor.getLine(start).replace(/^`+/, "").trim();
+	let end = -1;
+	const total = editor.lineCount();
+	for (let i = start + 1; i < total; i++) {
+		if (editor.getLine(i).trim() === "```") { end = i; break; }
+	}
+	if (end === -1 || curLine > end) return null;
+	const body: string[] = [];
+	for (let i = start + 1; i < end; i++) body.push(editor.getLine(i));
+	return { startLine: start, endLine: end, lang, body: body.join("\n") };
+}
+
+function replaceBlock(editor: Editor, blk: FencedBlock, newBlock: string): void {
+	editor.replaceRange(
+		newBlock,
+		{ line: blk.startLine, ch: 0 },
+		{ line: blk.endLine, ch: editor.getLine(blk.endLine).length },
+	);
+}
+
+// Parse a "line-0 primary, then key:value lines" block body. The inverse of the
+// code-block serializer.
+function parseKeyValueBlock(body: string): { primary?: string; kv: Record<string, string> } {
+	const lines = body.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+	let primary: string | undefined;
+	const kv: Record<string, string> = {};
+	for (const line of lines) {
+		const i = line.indexOf(":");
+		if (i === -1) {
+			if (primary === undefined) primary = line;
+			continue;
+		}
+		kv[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+	}
+	return { primary, kv };
 }
 
 // A settings tab is the natural home for the inline pickers (the modals are

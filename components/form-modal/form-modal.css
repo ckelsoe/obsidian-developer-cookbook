@@ -2,6 +2,12 @@
  * Namespace: dcb-. No !important and no inline styles, so it passes the
  * developer-portal scorecard. */
 
+/* Give the form room so native Setting rows (label left, control right) are not
+ * cramped in the default modal width. */
+.dcb-form {
+	min-width: min(540px, 92vw);
+}
+
 /* The body scrolls when the form is taller than the viewport, so the title and
  * footer stay put on a long form (the create/edit-task pattern). */
 .dcb-form-body {

@@ -28,6 +28,12 @@ const DEFAULT_SETTINGS: DemoSettings = {};
 // create-content pattern a real plugin (Tasks, a diagram plugin, etc.) follows.
 const CARD_ID = "cookbook-demo";
 
+// The demo renders its Mermaid diagrams under its OWN block language rather than
+// native ```mermaid. That is the whole point: a block this plugin renders can
+// carry an inline edit pencil, while a natively-rendered ```mermaid block cannot
+// (Obsidian owns that DOM), forcing the clunky cursor-in-source command instead.
+const MERMAID_ID = "cookbook-mermaid";
+
 export default class DeveloperCookbookDemo extends Plugin {
 	settings: DemoSettings = { ...DEFAULT_SETTINGS };
 
@@ -39,6 +45,8 @@ export default class DeveloperCookbookDemo extends Plugin {
 		// block is a visible card rather than inert text.
 		this.registerMarkdownCodeBlockProcessor(CARD_ID, (source, el, ctx) =>
 			this.renderCard(this.parseCard(source), el, () => void this.editCardBlock(source, el, ctx)));
+		this.registerMarkdownCodeBlockProcessor(MERMAID_ID, (source, el, ctx) =>
+			this.renderMermaid(source, el, () => void this.editMermaidBlock(source, el, ctx)));
 
 		this.addCommand({ id: "confirm-dialog", name: "Show confirm dialog", callback: () => void this.demoConfirm() });
 		this.addCommand({ id: "text-prompt", name: "Show text prompt", callback: () => void this.demoPrompt() });
@@ -183,19 +191,45 @@ export default class DeveloperCookbookDemo extends Plugin {
 		}
 	}
 
-	// Reopen the card's form pre-filled, then write the result back over the same
-	// block in the file. Uses the rendered element's section info to find the
-	// block's line range, so it works in both reading and live-preview modes.
+	// Reopen the card's form pre-filled, then write the result back over the block.
 	private async editCardBlock(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): Promise<void> {
 		const res = await this.openCardForm(this.parseCard(source));
-		if (!res) return;
+		if (res) await this.replaceRenderedBlock(el, ctx, this.cardBlock(res));
+	}
+
+	// Render a Mermaid diagram under this plugin's own block language, with a hover
+	// pencil. Because this plugin renders it, it can carry the edit affordance; a
+	// native ```mermaid block cannot, which is the whole reason for the own-language
+	// approach.
+	private renderMermaid(source: string, el: HTMLElement, onEdit?: () => void): void {
+		const wrap = el.createDiv({ cls: "cookbook-demo-mermaid" });
+		void MarkdownRenderer.render(this.app, "```mermaid\n" + source + "\n```", wrap, "", this);
+		if (onEdit) {
+			const btn = wrap.createEl("button", {
+				cls: "cookbook-demo-card-edit",
+				attr: { type: "button", "aria-label": "Edit diagram", title: "Edit diagram" },
+			});
+			setIcon(btn, "pencil");
+			btn.addEventListener("click", () => onEdit());
+		}
+	}
+
+	private async editMermaidBlock(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): Promise<void> {
+		const next = await this.openMermaidEditor(source);
+		if (next !== null) await this.replaceRenderedBlock(el, ctx, "```" + MERMAID_ID + "\n" + next + "\n```");
+	}
+
+	// Replace the rendered block this element belongs to, located by the section's
+	// line range. Works in reading and live-preview modes with no editor cursor,
+	// which is why the inline pencils can edit from either mode.
+	private async replaceRenderedBlock(el: HTMLElement, ctx: MarkdownPostProcessorContext, newBlock: string): Promise<void> {
 		const info = ctx.getSectionInfo(el);
 		const file = this.app.vault.getFileByPath(ctx.sourcePath);
 		if (!info || !file) {
-			new Notice("Could not locate the card to update.");
+			new Notice("Could not locate the block to update.");
 			return;
 		}
-		const newLines = this.cardBlock(res).split("\n");
+		const newLines = newBlock.split("\n");
 		await this.app.vault.process(file, data => {
 			const lines = data.split("\n");
 			lines.splice(info.lineStart, info.lineEnd - info.lineStart + 1, ...newLines);
@@ -238,7 +272,7 @@ export default class DeveloperCookbookDemo extends Plugin {
 
 	private async insertMermaid(editor: Editor): Promise<void> {
 		const source = await this.openMermaidEditor("");
-		if (source !== null) this.insertBlock(editor, "```mermaid\n" + source + "\n```");
+		if (source !== null) this.insertBlock(editor, "```" + MERMAID_ID + "\n" + source + "\n```");
 	}
 
 	// ----- Edit the block at the cursor ---------------------------------------
@@ -252,11 +286,11 @@ export default class DeveloperCookbookDemo extends Plugin {
 		if (blk.lang === CARD_ID) {
 			const res = await this.openCardForm(this.parseCard(blk.body));
 			if (res) replaceBlock(editor, blk, this.cardBlock(res));
-		} else if (blk.lang === "mermaid") {
+		} else if (blk.lang === MERMAID_ID) {
 			const source = await this.openMermaidEditor(blk.body);
-			if (source !== null) replaceBlock(editor, blk, "```mermaid\n" + source + "\n```");
+			if (source !== null) replaceBlock(editor, blk, "```" + MERMAID_ID + "\n" + source + "\n```");
 		} else {
-			new Notice(`This demo can only edit "${CARD_ID}" and "mermaid" blocks.`);
+			new Notice(`This demo can only edit "${CARD_ID}" and "${MERMAID_ID}" blocks.`);
 		}
 	}
 

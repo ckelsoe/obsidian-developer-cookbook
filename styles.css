@@ -391,7 +391,7 @@
 	font-size: var(--font-smaller);
 }
 
-/* ===== demo-only: cookbook-demo card + mermaid editor (rendered by main.ts) ===== */
+/* ===== demo-only: cookbook-demo card + mermaid (rendered by main.ts) ===== */
 .cookbook-demo-card {
 	position: relative;
 	padding: 8px 12px;
@@ -412,7 +412,13 @@
 	font-size: var(--font-ui-smaller);
 }
 
-/* Hover-revealed pencil, offset to sit left of Obsidian's own corner edit marker. */
+/* Wrapper for a plugin-rendered Mermaid diagram; relative so the pencil anchors. */
+.cookbook-demo-mermaid {
+	position: relative;
+}
+
+/* Hover-revealed pencil, offset to sit left of Obsidian's own corner edit marker.
+ * Shared by the card and the Mermaid wrapper. */
 .cookbook-demo-card-edit {
 	position: absolute;
 	top: 4px;
@@ -428,6 +434,7 @@
 }
 
 .cookbook-demo-card:hover .cookbook-demo-card-edit,
+.cookbook-demo-mermaid:hover .cookbook-demo-card-edit,
 .cookbook-demo-card-edit:focus-visible {
 	opacity: 0.7;
 }

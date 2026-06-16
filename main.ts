@@ -215,7 +215,7 @@ export default class DeveloperCookbookDemo extends Plugin {
 	}
 
 	private async editMermaidBlock(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): Promise<void> {
-		const next = await this.openMermaidEditor(source);
+		const next = await this.openMermaidEditor(source, true);
 		if (next !== null) await this.replaceRenderedBlock(el, ctx, "```" + MERMAID_ID + "\n" + next + "\n```");
 	}
 
@@ -244,12 +244,11 @@ export default class DeveloperCookbookDemo extends Plugin {
 	// time. This is the "build the block content and watch it render" pattern, the
 	// general shape of Altarok's rubikCubePLL editor. The block body IS the value,
 	// so there is no field parsing on the way in or out.
-	private async openMermaidEditor(initial: string): Promise<string | null> {
+	private async openMermaidEditor(initial: string, isEdit: boolean): Promise<string | null> {
 		let source = initial;
-		const editing = initial.trim() !== "";
 		const ok = await new FormModal(this.app, {
-			title: editing ? "Edit Mermaid diagram" : "Insert a Mermaid diagram",
-			cta: editing ? "Save" : "Insert",
+			title: isEdit ? "Edit Mermaid diagram" : "Insert a Mermaid diagram",
+			cta: isEdit ? "Save" : "Insert",
 			render: (body, form) => {
 				const input = body.createEl("textarea", {
 					cls: "cookbook-demo-mermaid-input",
@@ -271,7 +270,10 @@ export default class DeveloperCookbookDemo extends Plugin {
 	}
 
 	private async insertMermaid(editor: Editor): Promise<void> {
-		const source = await this.openMermaidEditor("");
+		// Seed a valid starter diagram so the preview renders immediately and the
+		// user edits from something that works, rather than starting empty and
+		// hitting Mermaid's "no diagram type" error on a bare edge like "A --> B".
+		const source = await this.openMermaidEditor("flowchart TD\n    A --> B", false);
 		if (source !== null) this.insertBlock(editor, "```" + MERMAID_ID + "\n" + source + "\n```");
 	}
 
@@ -287,7 +289,7 @@ export default class DeveloperCookbookDemo extends Plugin {
 			const res = await this.openCardForm(this.parseCard(blk.body));
 			if (res) replaceBlock(editor, blk, this.cardBlock(res));
 		} else if (blk.lang === MERMAID_ID) {
-			const source = await this.openMermaidEditor(blk.body);
+			const source = await this.openMermaidEditor(blk.body, true);
 			if (source !== null) replaceBlock(editor, blk, "```" + MERMAID_ID + "\n" + source + "\n```");
 		} else {
 			new Notice(`This demo can only edit "${CARD_ID}" and "${MERMAID_ID}" blocks.`);

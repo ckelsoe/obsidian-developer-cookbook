@@ -1,0 +1,30 @@
+/* icon-choice component styles. Paste this block into your plugin's styles.css.
+ * Namespace: dcb- (safe to leave as-is; plugins never share a DOM). No
+ * !important and no inline styles, so it passes the developer-portal scorecard. */
+
+.dcb-icon-choice {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35em;
+	align-items: center;
+}
+
+.dcb-icon-choice-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.35em;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+}
+
+/* The active button uses currentColor for its glyph, which setIcon's SVG
+ * inherits, so the accent text color recolors the icon as well as the chip. */
+.dcb-icon-choice-btn.is-active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.dcb-icon-choice-glyph {
+	display: inline-flex;
+}

@@ -1,0 +1,32 @@
+/* form-modal component styles. Paste this block into your plugin's styles.css.
+ * Namespace: dcb-. No !important and no inline styles, so it passes the
+ * developer-portal scorecard. */
+
+/* The body scrolls when the form is taller than the viewport, so the title and
+ * footer stay put on a long form (the create/edit-task pattern). */
+.dcb-form-body {
+	max-height: 60vh;
+	overflow-y: auto;
+}
+
+/* Nudge the footer's buttons apart from the body above them. */
+.dcb-form-footer {
+	margin-top: 12px;
+	border-top: none;
+}
+
+/* schema-form.ts: a field whose value fails validation (pattern, mandatory,
+ * numeric range). The red border clears when the value becomes valid or the
+ * field is skipped. */
+.dcb-field-invalid {
+	border-color: var(--text-error);
+}
+
+/* schema-form.ts: the optional long explanation rendered full-width under a
+ * field row for first-time users. */
+.dcb-field-explanation {
+	margin: 4px 0 10px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.4;
+}

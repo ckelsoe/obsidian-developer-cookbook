@@ -1,0 +1,110 @@
+/* color-picker component styles. Paste this block into your plugin's styles.css.
+ * Namespace: dcb-. No !important and no static inline styles (swatch and chip
+ * background colors are set dynamically in color-picker.ts because they are the
+ * chosen values, which is dynamic content, not static styling), so it passes the
+ * developer-portal scorecard. */
+
+.dcb-color-picker {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.dcb-color-row {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.dcb-color-row-caption {
+	min-width: 56px;
+	font-size: var(--font-smaller);
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.dcb-color-swatches {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.dcb-color-swatch {
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border-radius: 50%;
+	border: 2px solid var(--background-modifier-border);
+	/* background-color is set from color-picker.ts to the swatch's color. */
+	cursor: pointer;
+}
+
+.dcb-color-swatch:hover {
+	transform: scale(1.1);
+}
+
+.dcb-color-swatch.is-active {
+	border-color: var(--text-normal);
+	box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--text-normal);
+}
+
+.dcb-color-custom {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+/* The chip is a swatch-sized round affordance that hosts the native color
+ * input. The native input is positioned over the chip so the OS color picker
+ * still opens, but the visible shape matches the preset swatches above (a clear
+ * "I am also a picker" hint instead of an invisible dot). */
+.dcb-color-custom-chip {
+	position: relative;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	border: 2px dashed var(--text-muted);
+	background:
+		linear-gradient(45deg, transparent 45%, var(--text-muted) 45%, var(--text-muted) 55%, transparent 55%),
+		linear-gradient(135deg, transparent 45%, var(--text-muted) 45%, var(--text-muted) 55%, transparent 55%),
+		var(--background-primary);
+	cursor: pointer;
+	overflow: hidden;
+}
+
+.dcb-color-custom-chip.has-value {
+	border-style: solid;
+	border-color: var(--background-modifier-border);
+	background: var(--background-primary);
+}
+
+.dcb-color-custom-chip.has-value .dcb-color-native {
+	opacity: 1;
+}
+
+.dcb-color-native {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	cursor: pointer;
+	background: none;
+	opacity: 0;
+}
+
+.dcb-color-hex {
+	width: 9em;
+	font-family: var(--font-monospace);
+}
+
+.dcb-color-hex.is-invalid {
+	border-color: var(--text-error);
+}
+
+.dcb-color-reset {
+	font-size: var(--font-smaller);
+}

@@ -1,0 +1,368 @@
+/* Developer Cookbook demo styles.
+ * Assembled from each component's .css. When you copy a component into your
+ * own plugin, paste that component's .css block into your styles.css. */
+
+/* ===== components/modal-dialog/modal-dialog.css ===== */
+/* modal-dialog component styles. Paste this block into your plugin's styles.css.
+ * Namespace: dcb- (safe to leave as-is; plugins never share a DOM). No
+ * !important and no inline styles, so it passes the developer-portal scorecard. */
+
+.dcb-modal-message {
+	margin: 0 0 0.5em;
+}
+
+.dcb-modal-detail {
+	margin: 0 0 1em;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.dcb-modal-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35em;
+	margin-bottom: 1em;
+}
+
+.dcb-modal-label {
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+}
+
+.dcb-modal-input {
+	width: 100%;
+}
+
+.dcb-modal-error {
+	display: none;
+	color: var(--text-error);
+	font-size: var(--font-ui-smaller);
+}
+
+.dcb-modal-error.is-visible {
+	display: block;
+}
+
+/* ===== components/form-modal/form-modal.css ===== */
+/* form-modal component styles. Paste this block into your plugin's styles.css.
+ * Namespace: dcb-. No !important and no inline styles, so it passes the
+ * developer-portal scorecard. */
+
+/* The body scrolls when the form is taller than the viewport, so the title and
+ * footer stay put on a long form (the create/edit-task pattern). */
+.dcb-form-body {
+	max-height: 60vh;
+	overflow-y: auto;
+}
+
+/* Nudge the footer's buttons apart from the body above them. */
+.dcb-form-footer {
+	margin-top: 12px;
+	border-top: none;
+}
+
+/* schema-form.ts: a field whose value fails validation (pattern, mandatory,
+ * numeric range). The red border clears when the value becomes valid or the
+ * field is skipped. */
+.dcb-field-invalid {
+	border-color: var(--text-error);
+}
+
+/* schema-form.ts: the optional long explanation rendered full-width under a
+ * field row for first-time users. */
+.dcb-field-explanation {
+	margin: 4px 0 10px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.4;
+}
+
+/* ===== components/icon-choice/icon-choice.css ===== */
+/* icon-choice component styles. Paste this block into your plugin's styles.css.
+ * Namespace: dcb- (safe to leave as-is; plugins never share a DOM). No
+ * !important and no inline styles, so it passes the developer-portal scorecard. */
+
+.dcb-icon-choice {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35em;
+	align-items: center;
+}
+
+.dcb-icon-choice-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.35em;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+}
+
+/* The active button uses currentColor for its glyph, which setIcon's SVG
+ * inherits, so the accent text color recolors the icon as well as the chip. */
+.dcb-icon-choice-btn.is-active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.dcb-icon-choice-glyph {
+	display: inline-flex;
+}
+
+/* ===== components/icon-picker/icon-picker.css ===== */
+/* icon-picker component styles. Paste this block into your plugin's styles.css.
+ * Namespace: dcb-. No !important and no inline styles (the per-scroll grid
+ * geometry is set in virtual-list.ts, which is dynamic layout, not static
+ * styling), so it passes the developer-portal scorecard. */
+
+/* Inline trigger -------------------------------------------------------- */
+
+.dcb-icon-picker {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.dcb-icon-picker-trigger {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	cursor: pointer;
+}
+
+.dcb-icon-picker-trigger:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.dcb-icon-picker-preview {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+}
+
+.dcb-icon-picker-preview.is-empty {
+	color: var(--text-muted);
+	font-size: var(--font-smaller);
+}
+
+.dcb-icon-picker-clear {
+	font-size: var(--font-smaller);
+}
+
+/* Browse-all modal ------------------------------------------------------ */
+
+.dcb-icon-dialog {
+	width: min(900px, 92vw);
+	max-width: min(900px, 92vw);
+}
+
+.dcb-icon-search {
+	width: 100%;
+	margin-bottom: 8px;
+}
+
+.dcb-icon-count {
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+	margin-bottom: 8px;
+}
+
+.dcb-icon-grid {
+	max-height: 50vh;
+	overflow-y: auto;
+}
+
+.dcb-icon-row {
+	display: flex;
+	gap: 4px;
+}
+
+.dcb-icon-cell-spacer {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+.dcb-icon-cell {
+	display: flex;
+	flex: 1 1 0;
+	min-width: 0;
+	height: 100%;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 8px 6px;
+	border-radius: 6px;
+	cursor: pointer;
+	overflow: hidden;
+}
+
+.dcb-icon-cell:hover {
+	background: var(--background-modifier-hover);
+}
+
+.dcb-icon-cell.is-selected {
+	background: var(--background-modifier-active-hover);
+	box-shadow: inset 0 0 0 2px var(--interactive-accent);
+}
+
+.dcb-icon-preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-normal);
+}
+
+.dcb-icon-preview svg {
+	width: 24px;
+	height: 24px;
+}
+
+.dcb-icon-label {
+	font-size: var(--font-ui-smaller);
+	font-family: var(--font-monospace);
+	color: var(--text-muted);
+	text-align: center;
+	line-height: 1.2;
+	word-break: break-all;
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+
+/* Virtual list (shared row geometry) ------------------------------------ */
+
+.dcb-vlist-sizer {
+	position: relative;
+	width: 100%;
+}
+
+.dcb-vlist-rows {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+}
+
+.dcb-vlist-row {
+	box-sizing: border-box;
+	width: 100%;
+}
+
+/* ===== components/color-picker/color-picker.css ===== */
+/* color-picker component styles. Paste this block into your plugin's styles.css.
+ * Namespace: dcb-. No !important and no static inline styles (swatch and chip
+ * background colors are set dynamically in color-picker.ts because they are the
+ * chosen values, which is dynamic content, not static styling), so it passes the
+ * developer-portal scorecard. */
+
+.dcb-color-picker {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.dcb-color-row {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.dcb-color-row-caption {
+	min-width: 56px;
+	font-size: var(--font-smaller);
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.dcb-color-swatches {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.dcb-color-swatch {
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border-radius: 50%;
+	border: 2px solid var(--background-modifier-border);
+	/* background-color is set from color-picker.ts to the swatch's color. */
+	cursor: pointer;
+}
+
+.dcb-color-swatch:hover {
+	transform: scale(1.1);
+}
+
+.dcb-color-swatch.is-active {
+	border-color: var(--text-normal);
+	box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--text-normal);
+}
+
+.dcb-color-custom {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+/* The chip is a swatch-sized round affordance that hosts the native color
+ * input. The native input is positioned over the chip so the OS color picker
+ * still opens, but the visible shape matches the preset swatches above (a clear
+ * "I am also a picker" hint instead of an invisible dot). */
+.dcb-color-custom-chip {
+	position: relative;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	border: 2px dashed var(--text-muted);
+	background:
+		linear-gradient(45deg, transparent 45%, var(--text-muted) 45%, var(--text-muted) 55%, transparent 55%),
+		linear-gradient(135deg, transparent 45%, var(--text-muted) 45%, var(--text-muted) 55%, transparent 55%),
+		var(--background-primary);
+	cursor: pointer;
+	overflow: hidden;
+}
+
+.dcb-color-custom-chip.has-value {
+	border-style: solid;
+	border-color: var(--background-modifier-border);
+	background: var(--background-primary);
+}
+
+.dcb-color-custom-chip.has-value .dcb-color-native {
+	opacity: 1;
+}
+
+.dcb-color-native {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	cursor: pointer;
+	background: none;
+	opacity: 0;
+}
+
+.dcb-color-hex {
+	width: 9em;
+	font-family: var(--font-monospace);
+}
+
+.dcb-color-hex.is-invalid {
+	border-color: var(--text-error);
+}
+
+.dcb-color-reset {
+	font-size: var(--font-smaller);
+}
+

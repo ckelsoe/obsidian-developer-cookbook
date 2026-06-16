@@ -1,0 +1,39 @@
+/* modal-dialog component styles. Paste this block into your plugin's styles.css.
+ * Namespace: dcb- (safe to leave as-is; plugins never share a DOM). No
+ * !important and no inline styles, so it passes the developer-portal scorecard. */
+
+.dcb-modal-message {
+	margin: 0 0 0.5em;
+}
+
+.dcb-modal-detail {
+	margin: 0 0 1em;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.dcb-modal-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35em;
+	margin-bottom: 1em;
+}
+
+.dcb-modal-label {
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+}
+
+.dcb-modal-input {
+	width: 100%;
+}
+
+.dcb-modal-error {
+	display: none;
+	color: var(--text-error);
+	font-size: var(--font-ui-smaller);
+}
+
+.dcb-modal-error.is-visible {
+	display: block;
+}

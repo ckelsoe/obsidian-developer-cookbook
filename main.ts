@@ -203,50 +203,42 @@ export default class DeveloperCookbookDemo extends Plugin {
 		});
 	}
 
-	// ----- Mermaid: create, edit, build ---------------------------------------
-
-	private async openMermaidForm(initial?: Record<string, unknown>): Promise<Record<string, unknown> | null> {
-		const res = await openSchemaForm(this.app, {
-			title: initial ? "Edit Mermaid flowchart" : "Insert a Mermaid diagram",
-			cta: initial ? "Save" : "Insert",
-			initialValues: initial,
-			fields: [
-				{ key: "direction", name: "Direction", type: "dropdown", default: "TD", options: [
-					{ value: "TD", label: "Top-down" },
-					{ value: "LR", label: "Left-right" },
-					{ value: "BT", label: "Bottom-top" },
-					{ value: "RL", label: "Right-left" },
-				] },
-				{ key: "from", name: "From node", type: "string", mandatory: true },
-				{ key: "to", name: "To node", type: "string", mandatory: true },
-				{ key: "label", name: "Edge label", type: "string" },
-			],
-			// A real, rendered Mermaid diagram that redraws as the user types, via
-			// Obsidian's own MarkdownRenderer. No extra dependencies.
-			preview: (values, el) => {
-				void MarkdownRenderer.render(this.app, "```mermaid\n" + this.buildMermaid(values) + "\n```", el, "", this);
+	// ----- Mermaid: a free-form textarea with a live rendered preview ----------
+	//
+	// Uses the FormModal render callback directly (not the declarative form) so the
+	// body is a full-width code textarea: type raw Mermaid, see it render in real
+	// time. This is the "build the block content and watch it render" pattern, the
+	// general shape of Altarok's rubikCubePLL editor. The block body IS the value,
+	// so there is no field parsing on the way in or out.
+	private async openMermaidEditor(initial: string): Promise<string | null> {
+		let source = initial;
+		const editing = initial.trim() !== "";
+		const ok = await new FormModal(this.app, {
+			title: editing ? "Edit Mermaid diagram" : "Insert a Mermaid diagram",
+			cta: editing ? "Save" : "Insert",
+			render: (body, form) => {
+				const input = body.createEl("textarea", {
+					cls: "cookbook-demo-mermaid-input",
+					attr: { placeholder: "flowchart TD\n    A --> B" },
+				});
+				input.value = source;
+				const preview = body.createDiv({ cls: "dcb-form-preview" });
+				const refresh = (): void => {
+					form.setSubmitEnabled(source.trim() !== "");
+					preview.empty();
+					void MarkdownRenderer.render(this.app, "```mermaid\n" + source + "\n```", preview, "", this);
+				};
+				input.addEventListener("input", () => { source = input.value; refresh(); });
+				refresh();
 			},
-		});
-		return res ? res.values : null;
+			onSubmit: () => source.trim() !== "",
+		}).ask();
+		return ok ? source : null;
 	}
 
 	private async insertMermaid(editor: Editor): Promise<void> {
-		const res = await this.openMermaidForm();
-		if (res) this.insertBlock(editor, "```mermaid\n" + this.buildMermaid(res) + "\n```");
-	}
-
-	private buildMermaid(values: Record<string, unknown>): string {
-		const dir = String(values.direction ?? "TD");
-		const from = String(values.from ?? "A") || "A";
-		const to = String(values.to ?? "B") || "B";
-		const edge = values.label ? ` -->|${String(values.label)}| ` : " --> ";
-		return `flowchart ${dir}\n    A["${from}"]${edge}B["${to}"]`;
-	}
-
-	private parseMermaid(body: string): Record<string, unknown> {
-		const dir = body.match(/flowchart\s+(\w+)/)?.[1] ?? "TD";
-		const m = body.match(/A\["([\s\S]*?)"\]\s*-->(?:\|([\s\S]*?)\|)?\s*B\["([\s\S]*?)"\]/);
-		return { direction: dir, from: m?.[1] ?? "", label: m?.[2] ?? "", to: m?.[3] ?? "" };
+		const source = await this.openMermaidEditor("");
+		if (source !== null) this.insertBlock(editor, "```mermaid\n" + source + "\n```");
 	}
 
 	// ----- Edit the block at the cursor ---------------------------------------
@@ -261,8 +253,8 @@ export default class DeveloperCookbookDemo extends Plugin {
 			const res = await this.openCardForm(this.parseCard(blk.body));
 			if (res) replaceBlock(editor, blk, this.cardBlock(res));
 		} else if (blk.lang === "mermaid") {
-			const res = await this.openMermaidForm(this.parseMermaid(blk.body));
-			if (res) replaceBlock(editor, blk, "```mermaid\n" + this.buildMermaid(res) + "\n```");
+			const source = await this.openMermaidEditor(blk.body);
+			if (source !== null) replaceBlock(editor, blk, "```mermaid\n" + source + "\n```");
 		} else {
 			new Notice(`This demo can only edit "${CARD_ID}" and "mermaid" blocks.`);
 		}

@@ -1,7 +1,7 @@
 /* Developer Cookbook demo styles.
  * Component blocks below are assembled from each component's .css. When you
  * copy a component into your own plugin, paste that block into your styles.css.
- * The demo-only section at the end styles the cookbook-demo card. */
+ * The demo-only section at the end styles the cookbook-demo card and editor. */
 
 /* ===== components/modal-dialog/modal-dialog.css ===== */
 /* modal-dialog component styles. Paste this block into your plugin's styles.css.
@@ -391,7 +391,7 @@
 	font-size: var(--font-smaller);
 }
 
-/* ===== demo-only: cookbook-demo card (rendered by main.ts) ===== */
+/* ===== demo-only: cookbook-demo card + mermaid editor (rendered by main.ts) ===== */
 .cookbook-demo-card {
 	position: relative;
 	padding: 8px 12px;
@@ -412,9 +412,7 @@
 	font-size: var(--font-ui-smaller);
 }
 
-/* Hover-revealed pencil, like Obsidian's own block controls. Offset from the
- * right edge so it sits to the LEFT of Obsidian's live-preview edit marker
- * (which lives in the very corner) instead of under it. */
+/* Hover-revealed pencil, offset to sit left of Obsidian's own corner edit marker. */
 .cookbook-demo-card-edit {
 	position: absolute;
 	top: 4px;
@@ -442,4 +440,13 @@
 .cookbook-demo-card-edit svg {
 	width: 14px;
 	height: 14px;
+}
+
+/* Full-width code textarea for the Mermaid editor (FormModal render callback). */
+.cookbook-demo-mermaid-input {
+	width: 100%;
+	min-height: 140px;
+	resize: vertical;
+	font-family: var(--font-monospace);
+	margin-bottom: 8px;
 }

@@ -92,6 +92,12 @@ export interface SchemaFormOptions {
 	cta?: string;
 	destructive?: boolean;
 	fields: SchemaField[];
+	// Optional live preview pane rendered at the bottom of the modal. Called on
+	// open and after every field change, with the current effective values
+	// (skipped and empty fields omitted, the same map you get back as the result's
+	// `values`). Render whatever you like into `previewEl`: the generated code
+	// block, a rendered diagram, a summary. The pane is cleared before each call.
+	preview?: (values: Record<string, unknown>, previewEl: HTMLElement) => void;
 }
 
 const isTextual = (t: FieldType): boolean => t === "string" || t === "text" || t === "textarea";
@@ -112,8 +118,18 @@ export async function openSchemaForm(
 		cta: opts.cta,
 		destructive: opts.destructive,
 		render: (body, form) => {
-			const recompute = (): void => form.setSubmitEnabled(errors.size === 0);
+			// Late-bound so renderField's initial revalidate (which fires before the
+			// pane is created) is a harmless no-op; the pane lives below the fields.
+			let previewEl: HTMLElement | null = null;
+			const recompute = (): void => {
+				form.setSubmitEnabled(errors.size === 0);
+				if (opts.preview && previewEl) {
+					previewEl.empty();
+					opts.preview(snapshot(values, skipped, opts.fields), previewEl);
+				}
+			};
 			for (const f of opts.fields) renderField(body, f, values, skipped, errors, recompute);
+			if (opts.preview) previewEl = body.createDiv({ cls: "dcb-form-preview" });
 			recompute();
 		},
 		onSubmit: () => errors.size === 0,
@@ -122,14 +138,33 @@ export async function openSchemaForm(
 	if (!submitted) return null;
 
 	const fields: Record<string, FieldResult> = {};
-	const out: Record<string, unknown> = {};
 	for (const f of opts.fields) {
 		const isSkipped = skipped.has(f.key);
-		const result = isSkipped ? undefined : values[f.key];
-		fields[f.key] = { valid: !errors.has(f.key), skipped: isSkipped, result };
-		if (!isSkipped && result !== "" && result !== undefined) out[f.key] = result;
+		fields[f.key] = {
+			valid: !errors.has(f.key),
+			skipped: isSkipped,
+			result: isSkipped ? undefined : values[f.key],
+		};
 	}
-	return { fields, values: out };
+	return { fields, values: snapshot(values, skipped, opts.fields) };
+}
+
+// The effective values: non-skipped fields with a non-empty value. This is what
+// the result exposes and what the live preview receives, so a preview shows
+// exactly what the final output will contain.
+function snapshot(
+	values: Record<string, unknown>,
+	skipped: Set<string>,
+	fields: SchemaField[],
+): Record<string, unknown> {
+	const out: Record<string, unknown> = {};
+	for (const f of fields) {
+		if (skipped.has(f.key)) continue;
+		const v = values[f.key];
+		if (v === "" || v === undefined) continue;
+		out[f.key] = v;
+	}
+	return out;
 }
 
 function defaultFor(f: SchemaField): unknown {

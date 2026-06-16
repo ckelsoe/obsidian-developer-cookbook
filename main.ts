@@ -5,7 +5,7 @@
 // imports lives in ./components; copy any of those folders into your own plugin
 // to use them. This file is a showcase, not something to copy.
 
-import { Editor, Notice, Plugin } from "obsidian";
+import { Editor, MarkdownRenderer, Notice, Plugin } from "obsidian";
 
 import { ConfirmModal, PromptModal } from "./components/modal-dialog/modal-dialog";
 import { FormModal } from "./components/form-modal/form-modal";
@@ -41,6 +41,11 @@ export default class DeveloperCookbookDemo extends Plugin {
 			id: "build-code-block",
 			name: "Build a code block from a form",
 			editorCallback: (editor: Editor) => void this.demoSchemaForm(editor),
+		});
+		this.addCommand({
+			id: "build-mermaid-diagram",
+			name: "Build a Mermaid diagram with live preview",
+			editorCallback: (editor: Editor) => void this.demoMermaid(editor),
 		});
 	}
 
@@ -94,6 +99,11 @@ export default class DeveloperCookbookDemo extends Plugin {
 	}
 
 	private async demoSchemaForm(editor: Editor): Promise<void> {
+		const block = (values: Record<string, unknown>): string => serializeCodeBlock({
+			identifier: "cookbook-demo",
+			primary: values.title,
+			fields: ["color", "size", "count"].map(k => ({ key: k, value: values[k] })),
+		});
 		const res = await openSchemaForm(this.app, {
 			title: "Insert sample block",
 			cta: "Insert",
@@ -103,13 +113,44 @@ export default class DeveloperCookbookDemo extends Plugin {
 				{ key: "size", name: "Size", type: "dropdown", options: ["small", "medium", "large"], default: "medium" },
 				{ key: "count", name: "Count", type: "number", integer: true, min: 1, default: 1 },
 			],
+			// Live preview: the generated code block updates as the fields change.
+			preview: (values, el) => { el.createEl("pre", { text: block(values) }); },
 		});
 		if (!res) return;
-		const block = serializeCodeBlock({
-			identifier: "cookbook-demo",
-			primary: res.values.title,
-			fields: ["color", "size", "count"].map(k => ({ key: k, value: res.values[k] })),
+		editor.replaceSelection(block(res.values) + "\n");
+	}
+
+	private async demoMermaid(editor: Editor): Promise<void> {
+		const res = await openSchemaForm(this.app, {
+			title: "Insert Mermaid flowchart",
+			cta: "Insert",
+			fields: [
+				{ key: "direction", name: "Direction", type: "dropdown", default: "TD", options: [
+					{ value: "TD", label: "Top-down" },
+					{ value: "LR", label: "Left-right" },
+					{ value: "BT", label: "Bottom-top" },
+					{ value: "RL", label: "Right-left" },
+				] },
+				{ key: "from", name: "From node", type: "string", mandatory: true },
+				{ key: "to", name: "To node", type: "string", mandatory: true },
+				{ key: "label", name: "Edge label", type: "string" },
+			],
+			// The ultimate feature: a real, rendered Mermaid diagram that redraws as
+			// the user types, using Obsidian's own MarkdownRenderer. No extra deps.
+			preview: (values, el) => {
+				const md = "```mermaid\n" + this.buildMermaid(values) + "\n```";
+				void MarkdownRenderer.render(this.app, md, el, "", this);
+			},
 		});
-		editor.replaceSelection(block + "\n");
+		if (!res) return;
+		editor.replaceSelection("```mermaid\n" + this.buildMermaid(res.values) + "\n```\n");
+	}
+
+	private buildMermaid(values: Record<string, unknown>): string {
+		const dir = String(values.direction ?? "TD");
+		const from = String(values.from ?? "A") || "A";
+		const to = String(values.to ?? "B") || "B";
+		const edge = values.label ? ` -->|${String(values.label)}| ` : " --> ";
+		return `flowchart ${dir}\n    A["${from}"]${edge}B["${to}"]`;
 	}
 }

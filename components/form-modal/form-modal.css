@@ -30,3 +30,21 @@
 	font-size: var(--font-ui-smaller);
 	line-height: 1.4;
 }
+
+/* schema-form.ts: the optional live preview pane at the bottom of the form. The
+ * consumer renders into it (generated code block, rendered diagram, summary). */
+.dcb-form-preview {
+	margin-top: 12px;
+	padding: 10px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	max-height: 30vh;
+	overflow: auto;
+}
+
+.dcb-form-preview pre {
+	margin: 0;
+	white-space: pre-wrap;
+	word-break: break-word;
+}

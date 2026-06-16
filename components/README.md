@@ -49,7 +49,7 @@ your plugin's own prefix. It is never required for correctness.
 | Component | File | What it gives you |
 |---|---|---|
 | Modal dialogs | `modal-dialog/` | `ConfirmModal` (await a yes/no) and `PromptModal` (await a validated text entry), both Promise-based |
-| Form modal | `form-modal/` | Three layers: `FormModal` (the render-callback shell), `openSchemaForm` (describe fields as data, rendered with native Obsidian `Setting` controls, with mandatory / skip / pattern validation), and `serializeCodeBlock` (turn the result into a `key:value` code block). Targets Obsidian 1.13+ |
+| Form modal | `form-modal/` | Three layers: `FormModal` (the render-callback shell), `openSchemaForm` (describe fields as data, rendered with native Obsidian `Setting` controls, with mandatory / skip / pattern validation and an optional live `preview` pane that updates as you type), and `serializeCodeBlock` (turn the result into a `key:value` code block). Targets Obsidian 1.13+ |
 | Curated icon picker | `icon-choice/` | `createIconChoice` renders a single-select row from a developer-supplied array of icon ids. Inline, no modal, imports only `setIcon`. Use it when a setting should offer a short, deliberate set of icons |
 | Browse-all icon picker | `icon-picker/` | `createIconPicker` inline trigger plus the `SelectIconModal` it opens: a searchable, virtualized grid over every registered icon. Copy all four `.ts` files in the folder |
 | Color picker | `color-picker/` | `createColorPicker`: preset swatches (theme-adaptive by default, or a custom palette), a type-in hex field, and a native OS picker chip. Emits `var(--...)` for theme swatches and `#rrggbb` otherwise. One file, no imports |

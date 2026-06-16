@@ -400,11 +400,13 @@
 	background: var(--background-secondary);
 }
 
+/* Title and pencil grouped on the LEFT (not space-between), so the pencil never
+ * reaches the top-right corner where Obsidian puts its own live-preview edit
+ * marker. */
 .cookbook-demo-card-header {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
+	gap: 6px;
 }
 
 .cookbook-demo-card-title {
@@ -418,9 +420,6 @@
 	font-size: var(--font-ui-smaller);
 }
 
-/* Small pencil affordance beside the title; appears only on blocks this plugin
- * renders (Obsidian-rendered blocks like mermaid cannot host one). In-flow in the
- * header row, so it never overlays the block content. */
 .cookbook-demo-card-edit {
 	flex: 0 0 auto;
 	display: inline-flex;

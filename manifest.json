@@ -1,7 +1,7 @@
 {
   "id": "developer-cookbook",
   "name": "Developer Cookbook",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "minAppVersion": "1.13.0",
   "description": "Live gallery of reusable plugin building blocks: modals, pickers, and a declarative form builder.",
   "author": "Developer Cookbook contributors",

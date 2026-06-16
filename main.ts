@@ -5,7 +5,7 @@
 // of those folders into your own plugin to use them. This file is a showcase,
 // not something to copy.
 
-import { App, Editor, MarkdownRenderer, Notice, Plugin, PluginSettingTab, type SettingDefinitionItem } from "obsidian";
+import { App, Editor, MarkdownRenderer, type MarkdownPostProcessorContext, Notice, Plugin, PluginSettingTab, setIcon, type SettingDefinitionItem } from "obsidian";
 
 import { ConfirmModal, PromptModal } from "./components/modal-dialog/modal-dialog";
 import { FormModal } from "./components/form-modal/form-modal";
@@ -37,7 +37,8 @@ export default class DeveloperCookbookDemo extends Plugin {
 		// Render the cookbook-demo blocks the card command inserts, so the
 		// form -> block -> rendered output round trip is complete and the inserted
 		// block is a visible card rather than inert text.
-		this.registerMarkdownCodeBlockProcessor(CARD_ID, (source, el) => this.renderCard(this.parseCard(source), el));
+		this.registerMarkdownCodeBlockProcessor(CARD_ID, (source, el, ctx) =>
+			this.renderCard(this.parseCard(source), el, () => void this.editCardBlock(source, el, ctx)));
 
 		this.addCommand({ id: "confirm-dialog", name: "Show confirm dialog", callback: () => void this.demoConfirm() });
 		this.addCommand({ id: "text-prompt", name: "Show text prompt", callback: () => void this.demoPrompt() });
@@ -156,7 +157,10 @@ export default class DeveloperCookbookDemo extends Plugin {
 		};
 	}
 
-	private renderCard(values: Record<string, unknown>, el: HTMLElement): void {
+	// `onEdit`, when given, adds a clickable Edit button to the card. The form
+	// preview omits it (no onEdit); the rendered-in-note block includes it so the
+	// card can be reopened by clicking, not only via the command.
+	private renderCard(values: Record<string, unknown>, el: HTMLElement, onEdit?: () => void): void {
 		const card = el.createDiv({ cls: "cookbook-demo-card" });
 		const color = values.color as string | undefined;
 		if (color) card.style.borderInlineStartColor = color;
@@ -166,6 +170,34 @@ export default class DeveloperCookbookDemo extends Plugin {
 		if (values.count !== undefined && values.count !== "") parts.push(`count: ${String(values.count)}`);
 		if (color) parts.push(`color: ${color}`);
 		card.createDiv({ cls: "cookbook-demo-card-meta", text: parts.join("   •   ") });
+		if (onEdit) {
+			const btn = card.createEl("button", {
+				cls: "cookbook-demo-card-edit",
+				attr: { type: "button", "aria-label": "Edit card", title: "Edit card" },
+			});
+			setIcon(btn, "pencil");
+			btn.addEventListener("click", () => onEdit());
+		}
+	}
+
+	// Reopen the card's form pre-filled, then write the result back over the same
+	// block in the file. Uses the rendered element's section info to find the
+	// block's line range, so it works in both reading and live-preview modes.
+	private async editCardBlock(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext): Promise<void> {
+		const res = await this.openCardForm(this.parseCard(source));
+		if (!res) return;
+		const info = ctx.getSectionInfo(el);
+		const file = this.app.vault.getFileByPath(ctx.sourcePath);
+		if (!info || !file) {
+			new Notice("Could not locate the card to update.");
+			return;
+		}
+		const newLines = this.cardBlock(res).split("\n");
+		await this.app.vault.process(file, data => {
+			const lines = data.split("\n");
+			lines.splice(info.lineStart, info.lineEnd - info.lineStart + 1, ...newLines);
+			return lines.join("\n");
+		});
 	}
 
 	// ----- Mermaid: create, edit, build ---------------------------------------

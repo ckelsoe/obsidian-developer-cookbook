@@ -70,7 +70,7 @@ to see the components in action over a note. To hack on it locally instead, run
 
 ## Community
 
-Questions, ideas, and general discussion happen on [Discord](https://discord.gg/gd6tKJDPj4). For anything that needs tracking, a GitHub issue is still the better home.
+Questions, ideas, and general discussion happen on [Discord](https://discord.gg/gd6tKJDPj4). For anything that needs tracking, a [GitHub issue](https://github.com/ckelsoe/obsidian-developer-cookbook/issues) is still the better home.
 
 ## Contributing
 

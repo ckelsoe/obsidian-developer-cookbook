@@ -68,6 +68,10 @@ commands (for example "Show component gallery" or "Build a code block from a for
 to see the components in action over a note. To hack on it locally instead, run
 `npm install` then `npm run build`, and load the folder as an unpacked plugin.
 
+## Community
+
+Questions, ideas, and general discussion happen on [Discord](https://discord.gg/gd6tKJDPj4). For anything that needs tracking, a [GitHub issue](https://github.com/ckelsoe/obsidian-developer-cookbook/issues) is still the better home.
+
 ## Contributing
 
 This is meant to grow with community contributions. See `CONTRIBUTING.md` for the
